@@ -92,7 +92,7 @@
 			});
 		}
 		
-		//handle a calendar being selected
+		//handle a calendar (or week) being selected
 		//the default behaviour will be to load the previous week
 		function handleCalendarSelection(event) {
 			var calendarSelector = $('#calendar-selector-dropdown');
@@ -105,11 +105,15 @@
 					"timeMin": dateRange.weekBegin.toISOString(),
 					"timeMax": dateRange.weekEnd.toISOString()});
 				request.then(function(resp) {
-					$('#week-selector').show(); //show the div week-selector is the div week-selector-offset is the textbox
+					$('#week-selector').show(); //show the div. week-selector is the div week-selector-offset is the textbox
 					buildReport(resp.result.items);
 				}, function(reason) {
 					console.log('Error: ' + reason.result.error.message);
 				});
+			} else { // hide the selector and report box when no calendar is selected
+				$('#report-box').hide();
+				$('#week-selector').hide();
+				weekSelector.val(0);
 			}
 		}
 		
