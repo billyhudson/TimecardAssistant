@@ -5,6 +5,7 @@ body {
 header {
 	display: block;
 	padding: 5pt;
+	color: #000000;
 	background-color: #B0B0B0;
 	border-style: solid none;
 	border-width: 1pt;
@@ -40,6 +41,7 @@ header h1,h2 {
 	display: inline-block;
 	border: 1pt solid black;
 	padding: 5pt;
+	background-color: #C0C0C0;
 }
 
 #welcome-box h4 {
@@ -48,6 +50,8 @@ header h1,h2 {
 
 #welcome-box img{
 	vertical-align: middle;
+	border: 1px solid black;
+	margin: 0pt 5pt;
 }
 
 content {
