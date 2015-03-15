@@ -82,6 +82,8 @@
 						var calendar = resp.result.items[i];
 						option.value = calendar.id;
 						option.innerHTML = calendar.summary;
+						option.setAttribute('data-calendar-color-bg', calendar.backgroundColor); //store colors so we can do fancy ui stuff
+						option.setAttribute('data-calendar-color-fg', calendar.foregroundColor);
 						dropdown.append(option);
 					}
 					
@@ -97,7 +99,10 @@
 		//the default behaviour will be to load the previous week
 		function handleCalendarSelection(event) {
 			var calendarSelector = $('#calendar-selector-dropdown');
+			var selectedOption = calendarSelector.children('option').filter(":selected");
 			var weekSelector = $('#week-selector-offset');
+			$('header').css('color', selectedOption.attr('data-calendar-color-fg'));
+			$('header').css('background-color', selectedOption.attr('data-calendar-color-bg'));
 			if (calendarSelector.val() != '') { //ignore the default (Pick one)
 				var dateRange = calculateDateRange(weekSelector.val());
 				//build request
@@ -111,7 +116,7 @@
 				}, function(reason) {
 					console.log('Error: ' + reason.result.error.message);
 				});
-			} else { // hide the selector and report box when no calendar is selected
+			} else { // hide the selector and report box, and reset header colors when no calendar is selected
 				$('#report-box').hide();
 				$('#week-selector').hide();
 				weekSelector.val(0);
@@ -241,7 +246,7 @@
 			<div id="calendar-selector" style="display: none">
 				<p>Please select the calendar which you would like analyzed: 
 				<select id="calendar-selector-dropdown">
-				<option value="">(Pick one)</option>
+				<option value="" data-calendar-color-fg="#000000" data-calendar-color-bg="#B0B0B0">(Pick one)</option>
 				</select>
 				</p>
 			</div>
