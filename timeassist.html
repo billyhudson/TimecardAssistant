@@ -116,7 +116,7 @@
 				}, function(reason) {
 					console.log('Error: ' + reason.result.error.message);
 				});
-			} else { // hide the selector and report box, and reset header colors when no calendar is selected
+			} else { // hide the selector and report box when no calendar is selected
 				$('#report-box').hide();
 				$('#week-selector').hide();
 				weekSelector.val(0);
