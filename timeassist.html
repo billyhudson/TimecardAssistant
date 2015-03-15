@@ -3,6 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<title>Timecard Assistant</title>
+		<link rel="stylesheet" type="text/css" href="style.css">
 		<script src="jquery-2.1.3.min.js"></script>
 		<script type="text/javascript">
 		var clientId = '23587942434-ao1mok22srfg38sgvueq21s4896f81ql.apps.googleusercontent.com';
@@ -127,7 +128,7 @@
 				var eventLength = Math.abs(startTime.getTime() - endTime.getTime()); // calculate length of event in ms
 				eventLength = eventLength / (1000 * 3600) //convert to hours.
 				//encapsulate the important data
-				var eventData = {"name": event.summary, "length": eventLength, "startTime": startTime, "endTime": endTime};
+				var eventData = {"name": event.summary, "length": eventLength, "startTime": startTime, "endTime": endTime, "overlap": false};
 				//make sure the days array is initialized
 				var day = startTime.getDay();
 				if (typeof days[day] !== 'object') { // if this day has not already been initialized
@@ -148,12 +149,16 @@
 				var cell = document.createElement('td');
 				var list = document.createElement('ul');
 				if (typeof days[i] === 'object') {
+					//check for overlapping events that would throw off the calculation
 					if (checkForOverlaps(days[i].events)) {
-						alert("Warning! Some events in this calendar overlap. Hourly totals may not be accurate.");
+						alert("Warning! Some events in this calendar overlap. Hourly totals may not be accurate.\n\nOverlapping events are shown in red.");
 					}
 					for (var j = 0; j < days[i].events.length; j++) { //for each event
 						var li = document.createElement('li');
 						li.appendChild(document.createTextNode(days[i].events[j].name + " - " + days[i].events[j].length + "hrs"));
+						if (days[i].events[j].overlap) {
+							li.className = "overlap";
+						}
 						list.appendChild(li); //list it under that day
 					}
 					totalHrs += days[i].total; // sum up the total hrs from each day
@@ -196,15 +201,18 @@
 		function checkForOverlaps(events) {
 			//function will iterate over events in a day to ensure no events overlap
 			//first sort the events by start time
+			var overlaps = false;
 			events.sort(function compare(a,b) {
 				return a.startTime.getTime() - b.startTime.getTime();
 			});
 			for (var j = 0; j < (events.length - 1) ; j++) { //for each event
 				if (events[j].endTime.getTime() > events[j + 1].startTime.getTime()) { // if the end time of one event is later than start time of next
-					return true;
+					events[j].overlap = true;
+					events[j + 1].overlap = true;
+					overlaps = true;
 				}
 			}
-			return false;
+			return overlaps;
 		}
 		</script>
 	</head>
