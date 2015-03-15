@@ -136,9 +136,14 @@
 				days[day].events.push(eventData);
 				days[day].total += eventData.length;
 			}
+			outputHTML(days);
+		}
+		
+		function outputHTML(days) {
 			//build html
-			$('#report-table').html('<tr><th>Sunday</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th></tr>'); // recreate table
+			$('#report-box').html('<table id="report-table"><tr><th>Sunday</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th></tr></table>'); // recreate table
 			var row = document.createElement('tr');
+			var totalHrs = 0;
 			for (var i = 0; i < 6; i++) { //for each day
 				var cell = document.createElement('td');
 				var list = document.createElement('ul');
@@ -148,12 +153,17 @@
 						li.appendChild(document.createTextNode(days[i].events[j].name + " - " + days[i].events[j].length + "hrs"));
 						list.appendChild(li); //list it under that day
 					}
+					totalHrs += days[i].total; // sum up the total hrs from each day
 					$('#report-table tr th').eq(i).append(" - " + days[i].total + "hrs");
 				}
 				cell.appendChild(list);
 				row.appendChild(cell);
 			}
 			$('#report-table').append(row);
+			// show total hrs for week
+			var totalText = document.createElement('p');
+			totalText.appendChild(document.createTextNode('Total hours this week: ' + totalHrs));
+			$('#report-box').append(totalText);
 			$('#report-box').show();
 		}
 		
@@ -208,8 +218,6 @@
 			<button id="week-increment" onClick="modifyWeekOffset(1);">&gt;</button>
 		</div>
 		<div id="report-box" style="display: none">
-			<table id="report-table">
-			</table>
 		</div>
 		<!--This script must be loaded after everything else. -->
 		<script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
