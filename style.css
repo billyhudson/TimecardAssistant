@@ -79,6 +79,23 @@ content {
 	font-weight: bold;
 }
 
+#alert-box {
+    color: #050505;
+	background-color:#ffecec;
+    border-radius: 10pt;
+    padding: 10pt 10pt 10pt 36pt;
+    margin: 10pt;
+    border:1pt solid #f5aca6;
+}
+
+#alert-box strong {
+    text-transform:uppercase;
+}
+
+#alert-box span {
+	display: list-item;
+}
+
 table {
 	border-collapse: collapse;
 	border: 1px solid black;

@@ -26,7 +26,7 @@
 				$('#authorize-box').hide();
 				$('#loading-box').show();
 				//here is where we can start doing things
-				makeApiCall();
+				getWelcomeInfo();
 			} else {
 				//If not already authed from checkAuth then we can prompt the user
 				$('#loading-box').hide();
@@ -42,7 +42,7 @@
 		}
 		
 		// Load the API and make an API call.  Display the results on the screen.
-		function makeApiCall() {
+		function getWelcomeInfo() {
 			// Step 4: Load the Google+ API to get basic info
 			gapi.client.load('plus', 'v1').then(function() {
 				// Step 5: Assemble the API request
@@ -141,6 +141,7 @@
 				}
 				days[day].events.push(eventData);
 				days[day].total += eventData.length;
+				//TODO include date object for each day
 			}
 			outputHTML(days);
 		}
@@ -157,8 +158,12 @@
 				var list = document.createElement('ul');
 				if (typeof days[i] === 'object') {
 					//check for overlapping events that would throw off the calculation
-					if (checkForOverlaps(days[i].events)) {
-						alert("Warning! Some events in this calendar overlap. Hourly totals may not be accurate.\n\nOverlapping events are shown in red.");
+					//the length check is so that we don't display more than one alert.
+					if (checkForOverlaps(days[i].events) === true && $('#alert-box').length === 0) {
+						var alertBox = document.createElement('p');
+						alertBox.id = 'alert-box';
+						$(alertBox).html("<span><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in red.</span>");
+						$('#report-table').before(alertBox);
 					}
 					for (var j = 0; j < days[i].events.length; j++) { //for each event
 						var li = document.createElement('li');
