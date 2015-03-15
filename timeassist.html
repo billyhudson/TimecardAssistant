@@ -174,8 +174,8 @@
 			} else {
 				weekBegin.setDate(weekBegin.getDate() - weekBegin.getDay() - 7); // set weekBegin to sunday of last week
 			}
-			var weekEnd = new Date();
-			weekEnd.setDate(weekBegin.getDate() + 6); //go from midnight sunday (0) to midnight next sunday
+			var weekEnd = new Date(weekBegin); // initialize weekEnd to the same day as week weekBegin
+			weekEnd.setDate(weekEnd.getDate() + 6); //go from midnight sunday (0) to midnight next sunday
 			weekEnd.setSeconds(-1); //then go back one ms to get the end of the week
 			return {"weekBegin": weekBegin, "weekEnd": weekEnd};
 		}
