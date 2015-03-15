@@ -142,10 +142,12 @@
 		
 		function outputHTML(days) {
 			//build html
-			$('#report-box').html('<table id="report-table"><tr><th>Sunday</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th></tr></table>'); // recreate table
+			var reportBox = $('#report-box');
+			reportBox.hide();
+			reportBox.html('<table id="report-table"><tr><th>Sunday</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th></tr></table>'); // recreate table
 			var row = document.createElement('tr');
 			var totalHrs = 0;
-			for (var i = 0; i < 6; i++) { //for each day
+			for (var i = 0; i < 7; i++) { //for each day
 				var cell = document.createElement('td');
 				var list = document.createElement('ul');
 				if (typeof days[i] === 'object') {
@@ -171,8 +173,8 @@
 			// show total hrs for week
 			var totalText = document.createElement('p');
 			totalText.appendChild(document.createTextNode('Total hours this week: ' + totalHrs));
-			$('#report-box').append(totalText);
-			$('#report-box').show();
+			reportBox.append(totalText);
+			reportBox.show();
 		}
 		
 		function modifyWeekOffset(offset) {
@@ -218,32 +220,41 @@
 	</head>
 	<body>
 		<header>
-			<h1>Timecard Assistant</h1>
-			<h2>by Billy Hudson</h2>
+			<div id="padding-box1">
+				<h1>Timecard Assistant</h1>
+				<h2>by Billy Hudson</h2>
+			</div>
+			<div id="padding-box2">
+				<div id="welcome-box" style="display: none"></div>
+			</div>
+			<div class="clear"></div>
 		</header>
-		<div id="loading-box">
-			<h3>Loading...</h3>
-		</div>
-		<div id="authorize-box" style="display: none">
-			<!--Add a button for the user to click to initiate auth sequence -->
-			<p>In order to use <strong>Timecard Assistant</strong> you must first authorize the application to see your calendars.</p>
-			<button id="authorize-button">Authorize Now</button>
-		</div>
-		<div id="welcome-box" style="display: none"></div>
-		<div id="calendar-selector" style="display: none">
-			<p>Please select the calendar which you would like analyzed: 
-			<select id="calendar-selector-dropdown">
-			<option value="">(Pick one)</option>
-			</select>
-			</p>
-		</div>
-		<div id="week-selector" style="display: none">
-			<button id="week-decrement" onClick="modifyWeekOffset(-1);">&lt;</button>
-			<input type="text" name="week-offset" id="week-selector-offset" value="0" disabled="1" size="1">
-			<button id="week-increment" onClick="modifyWeekOffset(1);">&gt;</button>
-		</div>
-		<div id="report-box" style="display: none">
-		</div>
+		<content>
+			<div id="loading-box">
+				<h3>Loading...</h3>
+			</div>
+			<div id="authorize-box" style="display: none">
+				<!--Add a button for the user to click to initiate auth sequence -->
+				<p>In order to use <strong>Timecard Assistant</strong> you must first authorize the application to see your calendars.</p>
+				<button id="authorize-button">Authorize Now</button>
+			</div>
+			<div id="calendar-selector" style="display: none">
+				<p>Please select the calendar which you would like analyzed: 
+				<select id="calendar-selector-dropdown">
+				<option value="">(Pick one)</option>
+				</select>
+				</p>
+			</div>
+			<div id="week-selector" style="display: none">
+				<p>Select Week:
+				<button id="week-decrement" onClick="modifyWeekOffset(-1);">&lt;</button>
+				<input type="text" name="week-offset" id="week-selector-offset" value="0" disabled="1" size="1">
+				<button id="week-increment" onClick="modifyWeekOffset(1);">&gt;</button>
+				</p>
+			</div>
+			<div id="report-box" style="display: none">
+			</div>
+		</content>
 		<!--This script must be loaded after everything else. -->
 		<script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
 	</body>
