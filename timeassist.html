@@ -155,10 +155,10 @@
 				days[day].events.push(eventData);
 				days[day].total += eventData.length;
 			}
-			outputHTML_Landscape(days);
+			outputTable_Landscape(days);
 		}
 		
-		function outputHTML_Landscape(days) {
+		function outputTable_Landscape(days) {
 			//build html
 			var reportBox = $('#report-box');
 			reportBox.hide();
@@ -168,26 +168,9 @@
 			var row2 = document.createElement('tr');
 			var totalHrsWeek = 0;
 			for (var i = 0; i < 7; i++) { //for each day
-				var header = document.createElement('th');
-				//generate date sting for daily header
-				header.appendChild(document.createTextNode(week_enum[days[i].date.getDay()] + " " + month_enum[days[i].date.getMonth()] + " " + days[i].date.getDate()));
-				// make a cell for each days events
-				var cell = document.createElement('td');
-				var dailyList  = document.createElement('ul'); //init to empty list
-				if (typeof days[i] === 'object') { // if there are events for the day
-					//check for overlapping events that would throw off the calculation
-					//the length check is so that we don't display more than one alert.
-					if (checkForOverlaps(days[i].events) === true && $('#alert-box').length === 0) {
-						var alertBox = document.createElement('p');
-						alertBox.id = 'alert-box';
-						$(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in <span class="overlap">red</span>. Click on a highlighted event to open it in Google Calendar.</span>');
-						reportTable.before(alertBox);
-					}
-					dailyList = buildDailyEventList(days[i].events)
-					totalHrsWeek += days[i].total; // sum up the total hrs from each day
-					header.appendChild(document.createTextNode(" - " + days[i].total + "hrs")); // put into daily header
-				}
-				cell.appendChild(dailyList);
+				var header = buildDailyHeader(days[i]);
+				var cell = buildDailyCell(days[i]);
+				totalHrsWeek += days[i].total; // sum up the total hrs from each day
 				row1.appendChild(header);
 				row2.appendChild(cell);
 			}
@@ -198,6 +181,59 @@
 			totalText.appendChild(document.createTextNode('Total hours this week: ' + totalHrsWeek));
 			reportBox.append(totalText);
 			reportBox.show();
+		}
+		
+		function outputTable_Portrait(days) {
+			//build html
+			var reportBox = $('#report-box');
+			reportBox.hide();
+			reportBox.html('<table id="report-table"></table>'); // recreate table
+			var reportTable = $('#report-table');
+			var totalHrsWeek = 0;
+			for (var i = 0; i < 7; i++) { //for each day
+				var row = document.createElement('tr');
+				var header = buildDailyHeader(days[i]);
+				var cell = buildDailyCell(days[i]);
+				totalHrsWeek += days[i].total; // sum up the total hrs from each day
+				row.appendChild(header);
+				row.appendChild(cell);
+				reportTable.append(row);
+			}
+			// show total hrs for week
+			var totalText = document.createElement('p');
+			totalText.appendChild(document.createTextNode('Total hours this week: ' + totalHrsWeek));
+			reportBox.append(totalText);
+			reportBox.show();
+		}
+		
+		function buildDailyHeader(day) {
+			var header = document.createElement('th');
+			//generate date sting for daily header
+			header.appendChild(document.createTextNode(week_enum[day.date.getDay()] + " " + month_enum[day.date.getMonth()] + " " + day.date.getDate()));
+			header.appendChild(document.createTextNode(" - " + day.total + "hrs")); // put into daily header
+			return header;
+		}
+		
+		function buildDailyCell(day) {
+			var cell = document.createElement('td');
+			var dailyList  = document.createElement('ul'); //init to empty list
+			if (day.events.length > 0) { // if there are events for the day
+				//check for overlapping events that would throw off the calculation
+				//the length check is so that we don't display more than one alert.
+				if (checkForOverlaps(day.events) === true && $('#alert-box').length === 0) {
+					insertOverlapAlertBefore($('#report-table'));
+				}
+				dailyList = buildDailyEventList(day.events)
+			}
+			cell.appendChild(dailyList);
+			return cell;
+		}
+		
+		function insertOverlapAlertBefore(element) {
+			var alertBox = document.createElement('p');
+			alertBox.id = 'alert-box';
+			$(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in <span class="overlap">red</span>. Click on a highlighted event to open it in Google Calendar.</span>');
+			element.before(alertBox);
 		}
 		
 		function buildDailyEventList(events) {
