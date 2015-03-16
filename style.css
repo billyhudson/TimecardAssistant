@@ -79,6 +79,16 @@ content {
 	font-weight: bold;
 }
 
+.overlap a:link{
+	color: inherit;
+	text-decoration: none;
+}
+
+.overlap a:visited{
+	color: #8B0000;
+	text-decoration: none;
+}
+
 #alert-box {
     color: #050505;
 	background-color:#ffecec;
@@ -92,7 +102,7 @@ content {
     text-transform:uppercase;
 }
 
-#alert-box span {
+.li {
 	display: list-item;
 }
 
@@ -105,9 +115,4 @@ table {
 th, td {
     border: 1px solid black;
 	padding: 5pt;
-}
-
-td a:link{
-	color: inherit;
-	text-decoration: none;
 }

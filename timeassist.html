@@ -180,7 +180,7 @@
 					if (checkForOverlaps(days[i].events) === true && $('#alert-box').length === 0) {
 						var alertBox = document.createElement('p');
 						alertBox.id = 'alert-box';
-						$(alertBox).html("<span><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in red.<br>Click on a highlighted event to open it in Google Calendar.</span>");
+						$(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in <span class="overlap">red</span>. Click on a highlighted event to open it in Google Calendar.</span>');
 						reportTable.before(alertBox);
 					}
 					dailyList = buildDailyEventList(days[i].events)
@@ -292,6 +292,7 @@
 				<button id="week-decrement" onClick="modifyWeekOffset(-1);">&lt;</button>
 				<input type="text" name="week-offset" id="week-selector-offset" value="0" disabled="1" size="1">
 				<button id="week-increment" onClick="modifyWeekOffset(1);">&gt;</button>
+				<button id="reload" onClick="handleCalendarSelection();">Reload Calendar</button>
 				</p>
 			</div>
 			<div id="report-box" style="display: none">
