@@ -148,17 +148,17 @@
 				eventLength = eventLength / (1000 * 3600) //convert to hours.
 				
 				//encapsulate the important data
-				var eventData = {"name": event.summary, "length": eventLength, "startTime": startTime, "endTime": endTime, "overlap": false};
+				var eventData = {"name": event.summary, "length": eventLength, "startTime": startTime, "endTime": endTime, "overlap": false, "url": event.htmlLink};
 				
 				//build object for html renderer
 				var day = startTime.getDay();
 				days[day].events.push(eventData);
 				days[day].total += eventData.length;
 			}
-			outputHTML(days);
+			outputHTML_Landscape(days);
 		}
 		
-		function outputHTML(days) {
+		function outputHTML_Landscape(days) {
 			//build html
 			var reportBox = $('#report-box');
 			reportBox.hide();
@@ -180,7 +180,7 @@
 					if (checkForOverlaps(days[i].events) === true && $('#alert-box').length === 0) {
 						var alertBox = document.createElement('p');
 						alertBox.id = 'alert-box';
-						$(alertBox).html("<span><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in red.</span>");
+						$(alertBox).html("<span><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in red.<br>Click on a highlighted event to open it in Google Calendar.</span>");
 						reportTable.before(alertBox);
 					}
 					dailyList = buildDailyEventList(days[i].events)
@@ -204,9 +204,15 @@
 			var list = document.createElement('ul');
 			for (var j = 0; j < events.length; j++) { //for each event
 				var li = document.createElement('li');
-				li.appendChild(document.createTextNode(events[j].name + " - " + events[j].length + "hrs"));
 				if (events[j].overlap) {
+					var a = document.createElement('a');
+					a.href = events[j].url;
+					a.target = "_blank";
+					a.appendChild(document.createTextNode(events[j].name + " - " + events[j].length + "hrs")); //make a link to the event
+					li.appendChild(a);
 					li.className = "overlap"; //set the class so we can highlight them
+				} else {
+					li.appendChild(document.createTextNode(events[j].name + " - " + events[j].length + "hrs"));
 				}
 				list.appendChild(li); //list it under that day
 			}
