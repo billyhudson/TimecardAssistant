@@ -21,35 +21,72 @@ header {
 	border-color: black;
 }
 
-header h1,h2 {
-	display: inline;
-}
-
 /* TODO vertically center h1 */
 
 header h2 {
 	font-family: mayQueen;
 }
 
-#padding-box1, #padding-box2 {
-	width: 50%;
-	padding: 0;
-	margin: 0;
+@media screen and (orientation:portrait) {
+	/* portrait-specific styles */
+	*  {
+		font-size: 110%;
+	}
+	
+	header h1,h2 {
+		font-size: 200%;
+		display: block;
+		margin: 0px;
+	}
+	
+	#padding-box1, #padding-box2 {
+		width: 100%;
+		padding: 0;
+		margin: 0;
+	}
+
+	#padding-box1 {
+		float: none;
+		display: block;
+	}
+
+	#padding-box2 {
+		float: none;
+		display: flex;
+		justify-content: center;
+	}
+
+	.clear {
+		clear: none;
+	}
 }
 
-#padding-box1 {
-	float: left;
-	display: block;
-}
+@media screen and (orientation:landscape) {
+	/* landscape-specific styles */
+	header h1,h2 {
+		display: inline;
+	}
+	
+	#padding-box1, #padding-box2 {
+		width: 50%;
+		padding: 0;
+		margin: 0;
+	}
 
-#padding-box2 {
-	float: right;
-	display: flex;
-	justify-content: flex-end;
-}
+	#padding-box1 {
+		float: left;
+		display: block;
+	}
 
-.clear {
-	clear: both;
+	#padding-box2 {
+		float: right;
+		display: flex;
+		justify-content: flex-end;
+	}
+
+	.clear {
+		clear: both;
+	}
 }
 
 #welcome-box  {

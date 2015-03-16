@@ -92,6 +92,9 @@
 					
 					//stick it into the document
 					$('#calendar-selector').show();
+					
+					//register the orientation change callback to regenerate the table
+					window.addEventListener("resize", handleCalendarSelection, false);
 				}, function(reason) {
 					console.log('Error: ' + reason.result.error.message);
 				});
@@ -155,7 +158,26 @@
 				days[day].events.push(eventData);
 				days[day].total += eventData.length;
 			}
-			outputTable_Landscape(days);
+			outputTable(days);
+		}
+		
+		//this function decides whether to render the table in portrait or landscape
+		function outputTable(days) {
+			if(screenOrientationIsPortrait()) {
+				outputTable_Portrait(days);
+			} else {
+				outputTable_Landscape(days);
+			}
+		}
+		
+		function screenOrientationIsPortrait() {
+			if(window.innerHeight > window.innerWidth){
+				//portrait
+				return true;
+			} else {
+				//landscape
+				return false;
+			}
 		}
 		
 		function outputTable_Landscape(days) {
