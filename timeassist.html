@@ -10,6 +10,9 @@
 		var apiKey = 'AIzaSyB-D4q3bgPQQi__3XOMca5oWeoxKhI7p68';
 		var scopes = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/plus.me';
 		
+		var week_enum = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+		var month_enum = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+		
 		function handleClientLoad() {
 			// Step 2: Reference the API key
 			gapi.client.setApiKey(apiKey);
@@ -99,11 +102,14 @@
 		//the default behaviour will be to load the previous week
 		function handleCalendarSelection(event) {
 			var calendarSelector = $('#calendar-selector-dropdown');
-			var selectedOption = calendarSelector.children('option').filter(":selected");
+			var selectedOption = calendarSelector.children('option').filter(":selected"); //used to get data-* attributes from selected option
 			var weekSelector = $('#week-selector-offset');
+			
+			//change the header color based on calendar colour
 			$('header').css('color', selectedOption.attr('data-calendar-color-fg'));
 			$('header').css('background-color', selectedOption.attr('data-calendar-color-bg'));
-			if (calendarSelector.val() != '') { //ignore the default (Pick one)
+			
+			if (calendarSelector.val() != '') { //ignore the default dropdown selection
 				var dateRange = calculateDateRange(weekSelector.val());
 				//build request
 				var request = gapi.client.calendar.events.list({
@@ -112,7 +118,7 @@
 					"timeMax": dateRange.weekEnd.toISOString()});
 				request.then(function(resp) {
 					$('#week-selector').show(); //show the div. week-selector is the div week-selector-offset is the textbox
-					buildReport(resp.result.items);
+					buildReport(resp.result.items, dateRange.weekBegin);
 				}, function(reason) {
 					console.log('Error: ' + reason.result.error.message);
 				});
@@ -123,25 +129,31 @@
 			}
 		}
 		
-		function buildReport(eventList) {
+		function buildReport(eventList, weekBegin_t) {
 			//process data
 			var days = new Array();
+			var weekBegin = weekBegin_t; // dont' modify the weekBegin object we were passed
+			for (var i = 0; i < 7; i++) {
+				var dailyDate = new Date();
+				dailyDate.setDate(weekBegin.getDate() + i);
+				days[i] = {"total": 0, "events": [], "date": dailyDate};
+			}
 			for (var i = 0; i < eventList.length; i++) {
 				var event = eventList[i];
+				
+				//calulate event length
 				var startTime = new Date(event.start.dateTime);
 				var endTime = new Date(event.end.dateTime);
 				var eventLength = Math.abs(startTime.getTime() - endTime.getTime()); // calculate length of event in ms
 				eventLength = eventLength / (1000 * 3600) //convert to hours.
+				
 				//encapsulate the important data
 				var eventData = {"name": event.summary, "length": eventLength, "startTime": startTime, "endTime": endTime, "overlap": false};
-				//make sure the days array is initialized
+				
+				//build object for html renderer
 				var day = startTime.getDay();
-				if (typeof days[day] !== 'object') { // if this day has not already been initialized
-					days[day] = {"total": 0, "events": []};
-				}
 				days[day].events.push(eventData);
 				days[day].total += eventData.length;
-				//TODO include date object for each day
 			}
 			outputHTML(days);
 		}
@@ -150,41 +162,55 @@
 			//build html
 			var reportBox = $('#report-box');
 			reportBox.hide();
-			reportBox.html('<table id="report-table"><tr><th>Sunday</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th></tr></table>'); // recreate table
-			var row = document.createElement('tr');
-			var totalHrs = 0;
+			reportBox.html('<table id="report-table"></table>'); // recreate table
+			var reportTable = $('#report-table');
+			var row1 = document.createElement('tr');
+			var row2 = document.createElement('tr');
+			var totalHrsWeek = 0;
 			for (var i = 0; i < 7; i++) { //for each day
+				var header = document.createElement('th');
+				//generate date sting for daily header
+				header.appendChild(document.createTextNode(week_enum[days[i].date.getDay()] + " " + month_enum[days[i].date.getMonth()] + " " + days[i].date.getDate()));
+				// make a cell for each days events
 				var cell = document.createElement('td');
-				var list = document.createElement('ul');
-				if (typeof days[i] === 'object') {
+				var dailyList  = document.createElement('ul'); //init to empty list
+				if (typeof days[i] === 'object') { // if there are events for the day
 					//check for overlapping events that would throw off the calculation
 					//the length check is so that we don't display more than one alert.
 					if (checkForOverlaps(days[i].events) === true && $('#alert-box').length === 0) {
 						var alertBox = document.createElement('p');
 						alertBox.id = 'alert-box';
 						$(alertBox).html("<span><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in red.</span>");
-						$('#report-table').before(alertBox);
+						reportTable.before(alertBox);
 					}
-					for (var j = 0; j < days[i].events.length; j++) { //for each event
-						var li = document.createElement('li');
-						li.appendChild(document.createTextNode(days[i].events[j].name + " - " + days[i].events[j].length + "hrs"));
-						if (days[i].events[j].overlap) {
-							li.className = "overlap";
-						}
-						list.appendChild(li); //list it under that day
-					}
-					totalHrs += days[i].total; // sum up the total hrs from each day
-					$('#report-table tr th').eq(i).append(" - " + days[i].total + "hrs");
+					dailyList = buildDailyEventList(days[i].events)
+					totalHrsWeek += days[i].total; // sum up the total hrs from each day
+					header.appendChild(document.createTextNode(" - " + days[i].total + "hrs")); // put into daily header
 				}
-				cell.appendChild(list);
-				row.appendChild(cell);
+				cell.appendChild(dailyList);
+				row1.appendChild(header);
+				row2.appendChild(cell);
 			}
-			$('#report-table').append(row);
+			reportTable.append(row1);
+			reportTable.append(row2);
 			// show total hrs for week
 			var totalText = document.createElement('p');
-			totalText.appendChild(document.createTextNode('Total hours this week: ' + totalHrs));
+			totalText.appendChild(document.createTextNode('Total hours this week: ' + totalHrsWeek));
 			reportBox.append(totalText);
 			reportBox.show();
+		}
+		
+		function buildDailyEventList(events) {
+			var list = document.createElement('ul');
+			for (var j = 0; j < events.length; j++) { //for each event
+				var li = document.createElement('li');
+				li.appendChild(document.createTextNode(events[j].name + " - " + events[j].length + "hrs"));
+				if (events[j].overlap) {
+					li.className = "overlap"; //set the class so we can highlight them
+				}
+				list.appendChild(li); //list it under that day
+			}
+			return list;
 		}
 		
 		function modifyWeekOffset(offset) {
