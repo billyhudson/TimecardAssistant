@@ -137,7 +137,7 @@
 			var days = new Array();
 			var weekBegin = weekBegin_t; // dont' modify the weekBegin object we were passed
 			for (var i = 0; i < 7; i++) {
-				var dailyDate = new Date();
+				var dailyDate = new Date(weekBegin);
 				dailyDate.setDate(weekBegin.getDate() + i);
 				days[i] = {"total": 0, "events": [], "date": dailyDate};
 			}
