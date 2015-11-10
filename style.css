@@ -126,7 +126,7 @@ content {
 	text-decoration: none;
 }
 
-#alert-box {
+*[id^='alert-box-'] {
     color: #050505;
 	background-color:#ffecec;
     border-radius: 10pt;
@@ -135,7 +135,7 @@ content {
     border:1pt solid #f5aca6;
 }
 
-#alert-box strong {
+*[id^='alert-box-'] strong {
     text-transform:uppercase;
 }
 

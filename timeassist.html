@@ -159,6 +159,8 @@
 					var day = startTime.getDay();
 					days[day].events.push(eventData);
 					days[day].total += eventData.length;
+				} else {
+					insertMultiDayIgnoreAlertBefore($('#report-table'));
 				}
 			}
 			outputTable(days);
@@ -245,7 +247,7 @@
 			if (day.events.length > 0) { // if there are events for the day
 				//check for overlapping events that would throw off the calculation
 				//the length check is so that we don't display more than one alert.
-				if (checkForOverlaps(day.events) === true && $('#alert-box').length === 0) {
+				if (checkForOverlaps(day.events) === true) {
 					insertOverlapAlertBefore($('#report-table'));
 				}
 				dailyList = buildDailyEventList(day.events)
@@ -255,10 +257,21 @@
 		}
 		
 		function insertOverlapAlertBefore(element) {
-			var alertBox = document.createElement('p');
-			alertBox.id = 'alert-box';
-			$(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in <span class="overlap">red</span>. Click on a highlighted event to open it in Google Calendar.</span>');
-			element.before(alertBox);
+			if($('#alert-box-overlap').length === 0) {
+				var alertBox = document.createElement('p');
+				alertBox.id = 'alert-box-overlap';
+				$(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in <span class="overlap">red</span>. Click on a highlighted event to open it in Google Calendar.</span>');
+				element.before(alertBox);
+			}
+		}
+		
+		function insertMultiDayIgnoreAlertBefore(element) {
+			if($('#alert-box-multi-day-ignore').length === 0) {
+				var alertBox = document.createElement('p');
+				alertBox.id = 'alert-box-multi-day-ignore';
+				$(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar were ignored because they spanned more than one day. Hourly totals may not be accurate. Please verify that all hours are accounted for.</span>');
+				element.before(alertBox);
+			}
 		}
 		
 		function buildDailyEventList(events) {
