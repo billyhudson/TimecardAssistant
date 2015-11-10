@@ -135,7 +135,7 @@
 		function buildReport(eventList, weekBegin_t) {
 			//process data
 			var days = new Array();
-			var weekBegin = weekBegin_t; // dont' modify the weekBegin object we were passed
+			var weekBegin = weekBegin_t; // don't modify the weekBegin object we were passed
 			for (var i = 0; i < 7; i++) {
 				var dailyDate = new Date(weekBegin);
 				dailyDate.setDate(weekBegin.getDate() + i);
@@ -154,9 +154,12 @@
 				var eventData = {"name": event.summary, "length": eventLength, "startTime": startTime, "endTime": endTime, "overlap": false, "url": event.htmlLink};
 				
 				//build object for html renderer
-				var day = startTime.getDay();
-				days[day].events.push(eventData);
-				days[day].total += eventData.length;
+				// Only include single day events
+				if ( startTime.getDay() == endTime.getDay() ) {
+					var day = startTime.getDay();
+					days[day].events.push(eventData);
+					days[day].total += eventData.length;
+				}
 			}
 			outputTable(days);
 		}
