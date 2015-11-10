@@ -133,6 +133,9 @@
 		}
 		
 		function buildReport(eventList, weekBegin_t) {
+			//remove any old warnings
+			$("[id^='alert-box-']").remove();
+			
 			//process data
 			var days = new Array();
 			var weekBegin = weekBegin_t; // don't modify the weekBegin object we were passed
@@ -160,7 +163,7 @@
 					days[day].events.push(eventData);
 					days[day].total += eventData.length;
 				} else {
-					insertMultiDayIgnoreAlertBefore($('#report-table'));
+					insertMultiDayIgnoreAlertAfter($('#week-selector'));
 				}
 			}
 			outputTable(days);
@@ -248,7 +251,7 @@
 				//check for overlapping events that would throw off the calculation
 				//the length check is so that we don't display more than one alert.
 				if (checkForOverlaps(day.events) === true) {
-					insertOverlapAlertBefore($('#report-table'));
+					insertOverlapAlertAfter($('#week-selector'));
 				}
 				dailyList = buildDailyEventList(day.events)
 			}
@@ -256,21 +259,21 @@
 			return cell;
 		}
 		
-		function insertOverlapAlertBefore(element) {
+		function insertOverlapAlertAfter(element) {
 			if($('#alert-box-overlap').length === 0) {
 				var alertBox = document.createElement('p');
 				alertBox.id = 'alert-box-overlap';
 				$(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in <span class="overlap">red</span>. Click on a highlighted event to open it in Google Calendar.</span>');
-				element.before(alertBox);
+				element.after(alertBox);
 			}
 		}
 		
-		function insertMultiDayIgnoreAlertBefore(element) {
+		function insertMultiDayIgnoreAlertAfter(element) {
 			if($('#alert-box-multi-day-ignore').length === 0) {
 				var alertBox = document.createElement('p');
 				alertBox.id = 'alert-box-multi-day-ignore';
-				$(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar were ignored because they spanned more than one day. Hourly totals may not be accurate. Please verify that all hours are accounted for.</span>');
-				element.before(alertBox);
+				$(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar were ignored because they span more than one day. Hourly totals may not be accurate. Please verify that all hours are accounted for.</span>');
+				element.after(alertBox);
 			}
 		}
 		
