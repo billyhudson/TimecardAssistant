@@ -1,381 +1,394 @@
-<!doctype html>
+﻿<!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<title>Timecard Assistant</title>
-		<link rel="stylesheet" type="text/css" href="style.css">
-		<script src="jquery-2.1.3.min.js"></script>
-		<script type="text/javascript">
-		var clientId = '433643509928-d314dp7svm8him80c79r6142dbd2ed9t.apps.googleusercontent.com';
-		var apiKey = 'AIzaSyAKHChsxjQHmD8RKXBzU_GkWRGcW5rFEwU';
-		var scopes = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/plus.me';
-		
-		var week_enum = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-		var month_enum = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-		
-		function handleClientLoad() {
-			// Step 2: Reference the API key
-			gapi.client.setApiKey(apiKey);
-			//Check if we are already authorized
-			window.setTimeout(checkAuth,1);
-		}
-		
-		function checkAuth() {
-			gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, handleAuthResult);
+<head>
+    <meta charset="utf-8">
+    <title>Timecard Assistant</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="jquery-2.1.3.min.js"></script>
+    <script type="text/javascript">
+        var clientId = '433643509928-d314dp7svm8him80c79r6142dbd2ed9t.apps.googleusercontent.com';
+        var apiKey = 'AIzaSyAKHChsxjQHmD8RKXBzU_GkWRGcW5rFEwU';
+        var scopes = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/plus.me';
+
+        var week_enum = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        var month_enum = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+        /**
+         * Filter function for calendar events.
+         * @param event
+         */
+        function eventConfirmed(event) {
+            return event.status === "confirmed";
         }
-		
-		function handleAuthResult(authResult) {
-			if (authResult && !authResult.error) {
-				$('#authorize-box').hide();
-				$('#loading-box').show();
-				//here is where we can start doing things
-				getWelcomeInfo();
-			} else {
-				//If not already authed from checkAuth then we can prompt the user
-				$('#loading-box').hide();
-				$('#authorize-box').show();
-				$('#authorize-button').click(handleAuthClick);
-			}
+
+        function handleClientLoad() {
+            // Step 2: Reference the API key
+            gapi.client.setApiKey(apiKey);
+            //Check if we are already authorized
+            window.setTimeout(checkAuth, 1);
         }
-		
-		function handleAuthClick(event) {
-			// Step 3: get authorization to use private data
-			gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, handleAuthResult);
-			return false;
-		}
-		
-		// Load the API and make an API call.  Display the results on the screen.
-		function getWelcomeInfo() {
-			// Step 4: Load the Google+ API to get basic info
-			gapi.client.load('plus', 'v1').then(function() {
-				// Step 5: Assemble the API request
-				var request = gapi.client.plus.people.get({
-					'userId': 'me'
-					});
-				// Step 6: Execute the API request
-				request.then(function(resp) {
-				    //Make some pretty DOM, thanks google!
-					var heading = document.createElement('h4');
-					var image = document.createElement('img');
-					image.src = resp.result.image.url;
-					heading.appendChild(image);
-					heading.appendChild(document.createTextNode("Welcome "+resp.result.displayName+"!"));
-					
-					//stick it in to the document
-					$('#welcome-box').append(heading);
-					$('#loading-box').hide();
-					$('#welcome-box').show();
-				}, function(reason) {
-					console.log('Error: ' + reason.result.error.message);
-				});
-			});
-			//Load the calendar API and get calendar list
-			gapi.client.load('calendar', 'v3').then(function() {
-				//build request
-				var request = gapi.client.calendar.calendarList.list();
-				//excecute request
-				request.then(function(resp) {
-					//register a callback function to process the next step when the dropdown is changed
-					var dropdown = $('#calendar-selector-dropdown');
-					dropdown.change(handleCalendarSelection);
-					
-					//populate the dropdown
-					for (var i = 0; i < resp.result.items.length; i++) {
-						var option = document.createElement('option');
-						var calendar = resp.result.items[i];
-						option.value = calendar.id;
-						option.innerHTML = calendar.summary;
-						option.setAttribute('data-calendar-color-bg', calendar.backgroundColor); //store colors so we can do fancy ui stuff
-						option.setAttribute('data-calendar-color-fg', calendar.foregroundColor);
-						dropdown.append(option);
-					}
-					
-					//stick it into the document
-					$('#calendar-selector').show();
-					
-					//register the orientation change callback to regenerate the table
-					window.addEventListener("resize", handleCalendarSelection, false);
-				}, function(reason) {
-					console.log('Error: ' + reason.result.error.message);
-				});
-			});
-		}
-		
-		//handle a calendar (or week) being selected
-		//the default behaviour will be to load the previous week
-		function handleCalendarSelection(event) {
-			var calendarSelector = $('#calendar-selector-dropdown');
-			var selectedOption = calendarSelector.children('option').filter(":selected"); //used to get data-* attributes from selected option
-			var weekSelector = $('#week-selector-offset');
-			
-			//change the header color based on calendar colour
-			$('header').css('color', selectedOption.attr('data-calendar-color-fg'));
-			$('header').css('background-color', selectedOption.attr('data-calendar-color-bg'));
-			
-			if (calendarSelector.val() != '') { //ignore the default dropdown selection
-				var dateRange = calculateDateRange(weekSelector.val());
-				//build request
-				var request = gapi.client.calendar.events.list({
-					"calendarId": calendarSelector.val(),
-					"timeMin": dateRange.weekBegin.toISOString(),
-					"timeMax": dateRange.weekEnd.toISOString()});
-				request.then(function(resp) {
-					$('#week-selector').show(); //show the div. week-selector is the div week-selector-offset is the textbox
-					buildReport(resp.result.items, dateRange.weekBegin);
-				}, function(reason) {
-					console.log('Error: ' + reason.result.error.message);
-				});
-			} else { // hide the selector and report box when no calendar is selected
-				$('#report-box').hide();
-				$('#week-selector').hide();
-				weekSelector.val(0);
-			}
-		}
-		
-		function buildReport(eventList, weekBegin_t) {
-			//remove any old warnings
-			$("[id^='alert-box-']").remove();
-			
-			//process data
-			var days = new Array();
-			var weekBegin = weekBegin_t; // don't modify the weekBegin object we were passed
-			for (var i = 0; i < 7; i++) {
-				var dailyDate = new Date(weekBegin);
-				dailyDate.setDate(weekBegin.getDate() + i);
-				days[i] = {"total": 0, "events": [], "date": dailyDate};
-			}
-			for (var i = 0; i < eventList.length; i++) {
-				var event = eventList[i];
-				
-				//calulate event length
-				var startTime = new Date(event.start.dateTime);
-				var endTime = new Date(event.end.dateTime);
-				var eventLength = Math.abs(startTime.getTime() - endTime.getTime()); // calculate length of event in ms
-				eventLength = eventLength / (1000 * 3600) //convert to hours.
-				
-				//encapsulate the important data
-				var eventData = {"name": event.summary, "length": eventLength, "startTime": startTime, "endTime": endTime, "overlap": false, "url": event.htmlLink};
-				
-				//build object for html renderer
-				// Only include single day events
-				if ( startTime.getDay() == endTime.getDay() ) {
-					var day = startTime.getDay();
-					days[day].events.push(eventData);
-					days[day].total += eventData.length;
-				} else {
-					insertMultiDayIgnoreAlertAfter($('#week-selector'));
-				}
-			}
-			outputTable(days);
-		}
-		
-		//this function decides whether to render the table in portrait or landscape
-		function outputTable(days) {
-			if(screenOrientationIsPortrait()) {
-				outputTable_Portrait(days);
-			} else {
-				outputTable_Landscape(days);
-			}
-		}
-		
-		function screenOrientationIsPortrait() {
-			if(window.innerHeight > window.innerWidth){
-				//portrait
-				return true;
-			} else {
-				//landscape
-				return false;
-			}
-		}
-		
-		function outputTable_Landscape(days) {
-			//build html
-			var reportBox = $('#report-box');
-			reportBox.hide();
-			reportBox.html('<table id="report-table"></table>'); // recreate table
-			var reportTable = $('#report-table');
-			var row1 = document.createElement('tr');
-			var row2 = document.createElement('tr');
-			var totalHrsWeek = 0;
-			for (var i = 0; i < 7; i++) { //for each day
-				var header = buildDailyHeader(days[i]);
-				var cell = buildDailyCell(days[i]);
-				totalHrsWeek += days[i].total; // sum up the total hrs from each day
-				row1.appendChild(header);
-				row2.appendChild(cell);
-			}
-			reportTable.append(row1);
-			reportTable.append(row2);
-			// show total hrs for week
-			var totalText = document.createElement('p');
-			totalText.appendChild(document.createTextNode('Total hours this week: ' + totalHrsWeek));
-			reportBox.append(totalText);
-			reportBox.show();
-		}
-		
-		function outputTable_Portrait(days) {
-			//build html
-			var reportBox = $('#report-box');
-			reportBox.hide();
-			reportBox.html('<table id="report-table"></table>'); // recreate table
-			var reportTable = $('#report-table');
-			var totalHrsWeek = 0;
-			for (var i = 0; i < 7; i++) { //for each day
-				var row = document.createElement('tr');
-				var header = buildDailyHeader(days[i]);
-				var cell = buildDailyCell(days[i]);
-				totalHrsWeek += days[i].total; // sum up the total hrs from each day
-				row.appendChild(header);
-				row.appendChild(cell);
-				reportTable.append(row);
-			}
-			// show total hrs for week
-			var totalText = document.createElement('p');
-			totalText.appendChild(document.createTextNode('Total hours this week: ' + totalHrsWeek));
-			reportBox.append(totalText);
-			reportBox.show();
-		}
-		
-		function buildDailyHeader(day) {
-			var header = document.createElement('th');
-			//generate date sting for daily header
-			header.appendChild(document.createTextNode(week_enum[day.date.getDay()] + " " + month_enum[day.date.getMonth()] + " " + day.date.getDate()));
-			header.appendChild(document.createTextNode(" - " + day.total + "hrs")); // put into daily header
-			return header;
-		}
-		
-		function buildDailyCell(day) {
-			var cell = document.createElement('td');
-			var dailyList  = document.createElement('ul'); //init to empty list
-			if (day.events.length > 0) { // if there are events for the day
-				//check for overlapping events that would throw off the calculation
-				//the length check is so that we don't display more than one alert.
-				if (checkForOverlaps(day.events) === true) {
-					insertOverlapAlertAfter($('#week-selector'));
-				}
-				dailyList = buildDailyEventList(day.events)
-			}
-			cell.appendChild(dailyList);
-			return cell;
-		}
-		
-		function insertOverlapAlertAfter(element) {
-			if($('#alert-box-overlap').length === 0) {
-				var alertBox = document.createElement('p');
-				alertBox.id = 'alert-box-overlap';
-				$(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in <span class="overlap">red</span>. Click on a highlighted event to open it in Google Calendar.</span>');
-				element.after(alertBox);
-			}
-		}
-		
-		function insertMultiDayIgnoreAlertAfter(element) {
-			if($('#alert-box-multi-day-ignore').length === 0) {
-				var alertBox = document.createElement('p');
-				alertBox.id = 'alert-box-multi-day-ignore';
-				$(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar were ignored because they span more than one day. Hourly totals may not be accurate. Please verify that all hours are accounted for.</span>');
-				element.after(alertBox);
-			}
-		}
-		
-		function buildDailyEventList(events) {
-			var list = document.createElement('ul');
-			for (var j = 0; j < events.length; j++) { //for each event
-				var li = document.createElement('li');
-				if (events[j].overlap) {
-					var a = document.createElement('a');
-					a.href = events[j].url;
-					a.target = "_blank";
-					a.appendChild(document.createTextNode(events[j].name + " - " + events[j].length + "hrs")); //make a link to the event
-					li.appendChild(a);
-					li.className = "overlap"; //set the class so we can highlight them
-				} else {
-					li.appendChild(document.createTextNode(events[j].name + " - " + events[j].length + "hrs"));
-				}
-				list.appendChild(li); //list it under that day
-			}
-			return list;
-		}
-		
-		function modifyWeekOffset(offset) {
-			var selector = $('#week-selector-offset');
-			selector.val(parseInt(selector.val(),10) + offset);
-			handleCalendarSelection();
-		}
-		
-		function calculateDateRange(offset_weeks) {
-			//calculate date range based on a week offset from the current week
-			var weekBegin = new Date(); //initialize to now
-			weekBegin.setDate(weekBegin.getDate() + (7 * offset_weeks)); //calculate offset (usu. negative)
-			weekBegin.setHours(0,0,0,0); // zero out time to midnight
-			
-			if (weekBegin.getDay() >= 5) { //if it is friday or saturday today
-				weekBegin.setDate(weekBegin.getDate() - weekBegin.getDay()); // set weekBegin to sunday of this week
-			} else {
-				weekBegin.setDate(weekBegin.getDate() - weekBegin.getDay() - 7); // set weekBegin to sunday of last week
-			}
-			var weekEnd = new Date(weekBegin); // initialize weekEnd to the same day as week weekBegin
-			weekEnd.setDate(weekEnd.getDate() + 7); //go from midnight sunday (0) to midnight next sunday
-			weekEnd.setSeconds(-1); //then go back one ms to get the end of the week
-			return {"weekBegin": weekBegin, "weekEnd": weekEnd};
-		}
-		
-		function checkForOverlaps(events) {
-			//function will iterate over events in a day to ensure no events overlap
-			//first sort the events by start time
-			var overlaps = false;
-			events.sort(function compare(a,b) {
-				return a.startTime.getTime() - b.startTime.getTime();
-			});
-			for (var j = 0; j < (events.length - 1) ; j++) { //for each event
-				if (events[j].endTime.getTime() > events[j + 1].startTime.getTime()) { // if the end time of one event is later than start time of next
-					events[j].overlap = true;
-					events[j + 1].overlap = true;
-					overlaps = true;
-				}
-			}
-			return overlaps;
-		}
-		</script>
-	</head>
-	<body>
-		<header>
-			<div id="padding-box1">
-				<h1>Timecard Assistant</h1>
-				<h2>by Billy Hudson</h2>
-			</div>
-			<div id="padding-box2">
-				<div id="welcome-box" style="display: none"></div>
-			</div>
-			<div class="clear"></div>
-		</header>
-		<content>
-			<div id="loading-box">
-				<h3>Loading...</h3>
-			</div>
-			<div id="authorize-box" style="display: none">
-				<!--Add a button for the user to click to initiate auth sequence -->
-				<p>In order to use <strong>Timecard Assistant</strong> you must first authorize the application to see your calendars.</p>
-				<button id="authorize-button">Authorize Now</button>
-			</div>
-			<div id="calendar-selector" style="display: none">
-				<p>Please select the calendar which you would like analyzed: 
-				<select id="calendar-selector-dropdown">
-				<option value="" data-calendar-color-fg="#000000" data-calendar-color-bg="#B0B0B0">(Pick one)</option>
-				</select>
-				</p>
-			</div>
-			<div id="week-selector" style="display: none">
-				<p>Select Week:
-				<button id="week-decrement" onClick="modifyWeekOffset(-1);">&lt;</button>
-				<input type="text" name="week-offset" id="week-selector-offset" value="0" disabled="1" size="1">
-				<button id="week-increment" onClick="modifyWeekOffset(1);">&gt;</button>
-				<button id="reload" onClick="handleCalendarSelection();">Reload Calendar</button>
-				</p>
-			</div>
-			<div id="report-box" style="display: none">
-			</div>
-		</content>
-		<!--This script must be loaded after everything else. -->
-		<script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
-	</body>
+
+        function checkAuth() {
+            gapi.auth.authorize({ client_id: clientId, scope: scopes, immediate: false }, handleAuthResult);
+        }
+
+        function handleAuthResult(authResult) {
+            if (authResult && !authResult.error) {
+                $('#authorize-box').hide();
+                $('#loading-box').show();
+                //here is where we can start doing things
+                getWelcomeInfo();
+            } else {
+                //If not already authed from checkAuth then we can prompt the user
+                $('#loading-box').hide();
+                $('#authorize-box').show();
+                $('#authorize-button').click(handleAuthClick);
+            }
+        }
+
+        function handleAuthClick(event) {
+            // Step 3: get authorization to use private data
+            gapi.auth.authorize({ client_id: clientId, scope: scopes, immediate: false }, handleAuthResult);
+            return false;
+        }
+
+        // Load the API and make an API call.  Display the results on the screen.
+        function getWelcomeInfo() {
+            // Step 4: Load the Google+ API to get basic info
+            gapi.client.load('plus', 'v1').then(function () {
+                // Step 5: Assemble the API request
+                var request = gapi.client.plus.people.get({
+                    'userId': 'me'
+                });
+                // Step 6: Execute the API request
+                request.then(function (resp) {
+                    //Make some pretty DOM, thanks google!
+                    var heading = document.createElement('h4');
+                    var image = document.createElement('img');
+                    image.src = resp.result.image.url;
+                    heading.appendChild(image);
+                    heading.appendChild(document.createTextNode("Welcome " + resp.result.displayName + "!"));
+
+                    //stick it in to the document
+                    $('#welcome-box').append(heading);
+                    $('#loading-box').hide();
+                    $('#welcome-box').show();
+                }, function (reason) {
+                    console.log('Error: ' + reason.result.error.message);
+                });
+            });
+            //Load the calendar API and get calendar list
+            gapi.client.load('calendar', 'v3').then(function () {
+                //build request
+                var request = gapi.client.calendar.calendarList.list();
+                //excecute request
+                request.then(function (resp) {
+                    //register a callback function to process the next step when the dropdown is changed
+                    var dropdown = $('#calendar-selector-dropdown');
+                    dropdown.change(handleCalendarSelection);
+
+                    //populate the dropdown
+                    for (var i = 0; i < resp.result.items.length; i++) {
+                        var option = document.createElement('option');
+                        var calendar = resp.result.items[i];
+                        option.value = calendar.id;
+                        option.innerHTML = calendar.summary;
+                        option.setAttribute('data-calendar-color-bg', calendar.backgroundColor); //store colors so we can do fancy ui stuff
+                        option.setAttribute('data-calendar-color-fg', calendar.foregroundColor);
+                        dropdown.append(option);
+                    }
+
+                    //stick it into the document
+                    $('#calendar-selector').show();
+
+                    //register the orientation change callback to regenerate the table
+                    window.addEventListener("resize", handleCalendarSelection, false);
+                }, function (reason) {
+                    console.log('Error: ' + reason.result.error.message);
+                });
+            });
+        }
+
+        //handle a calendar (or week) being selected
+        //the default behaviour will be to load the previous week
+        function handleCalendarSelection(event) {
+            var calendarSelector = $('#calendar-selector-dropdown');
+            var selectedOption = calendarSelector.children('option').filter(":selected"); //used to get data-* attributes from selected option
+            var weekSelector = $('#week-selector-offset');
+
+            //change the header color based on calendar colour
+            $('header').css('color', selectedOption.attr('data-calendar-color-fg'));
+            $('header').css('background-color', selectedOption.attr('data-calendar-color-bg'));
+
+            if (calendarSelector.val() != '') { //ignore the default dropdown selection
+                var dateRange = calculateDateRange(weekSelector.val());
+                //build request
+                var request = gapi.client.calendar.events.list({
+                    "calendarId": calendarSelector.val(),
+                    "timeMin": dateRange.weekBegin.toISOString(),
+                    "timeMax": dateRange.weekEnd.toISOString()
+                });
+                request.then(function (resp) {
+                    $('#week-selector').show(); //show the div. week-selector is the div week-selector-offset is the textbox
+                    buildReport(resp.result.items, dateRange.weekBegin);
+                }, function (reason) {
+                    console.log('Error: ' + reason.result.error.message);
+                });
+            } else { // hide the selector and report box when no calendar is selected
+                $('#report-box').hide();
+                $('#week-selector').hide();
+                weekSelector.val(0);
+            }
+        }
+
+        function buildReport(eventList, weekBegin_t) {
+            //remove any old warnings
+            $("[id^='alert-box-']").remove();
+
+            //process data
+            var days = new Array();
+            var weekBegin = weekBegin_t; // don't modify the weekBegin object we were passed
+            for (var i = 0; i < 7; i++) {
+                var dailyDate = new Date(weekBegin);
+                dailyDate.setDate(weekBegin.getDate() + i);
+                days[i] = { "total": 0, "events": [], "date": dailyDate };
+            }
+            // filter unconfirmed events from the list
+            eventList = eventList.filter(eventConfirmed);
+            for (var i = 0; i < eventList.length; i++) {
+                var event = eventList[i];
+
+                //calulate event length
+                var startTime = new Date(event.start.dateTime);
+                var endTime = new Date(event.end.dateTime);
+                var eventLength = Math.abs(startTime.getTime() - endTime.getTime()); // calculate length of event in ms
+                eventLength = eventLength / (1000 * 3600) //convert to hours.
+
+                //encapsulate the important data
+                var eventData = { "name": event.summary, "length": eventLength, "startTime": startTime, "endTime": endTime, "overlap": false, "url": event.htmlLink };
+
+                //build object for html renderer
+                // Only include single day events
+                if (startTime.getDay() == endTime.getDay()) {
+                    var day = startTime.getDay();
+                    days[day].events.push(eventData);
+                    days[day].total += eventData.length;
+                } else {
+                    insertMultiDayIgnoreAlertAfter($('#week-selector'));
+                }
+            }
+            outputTable(days);
+        }
+
+        //this function decides whether to render the table in portrait or landscape
+        function outputTable(days) {
+            if (screenOrientationIsPortrait()) {
+                outputTable_Portrait(days);
+            } else {
+                outputTable_Landscape(days);
+            }
+        }
+
+        function screenOrientationIsPortrait() {
+            if (window.innerHeight > window.innerWidth) {
+                //portrait
+                return true;
+            } else {
+                //landscape
+                return false;
+            }
+        }
+
+        function outputTable_Landscape(days) {
+            //build html
+            var reportBox = $('#report-box');
+            reportBox.hide();
+            reportBox.html('<table id="report-table"></table>'); // recreate table
+            var reportTable = $('#report-table');
+            var row1 = document.createElement('tr');
+            var row2 = document.createElement('tr');
+            var totalHrsWeek = 0;
+            for (var i = 0; i < 7; i++) { //for each day
+                var header = buildDailyHeader(days[i]);
+                var cell = buildDailyCell(days[i]);
+                totalHrsWeek += days[i].total; // sum up the total hrs from each day
+                row1.appendChild(header);
+                row2.appendChild(cell);
+            }
+            reportTable.append(row1);
+            reportTable.append(row2);
+            // show total hrs for week
+            var totalText = document.createElement('p');
+            totalText.appendChild(document.createTextNode('Total hours this week: ' + totalHrsWeek));
+            reportBox.append(totalText);
+            reportBox.show();
+        }
+
+        function outputTable_Portrait(days) {
+            //build html
+            var reportBox = $('#report-box');
+            reportBox.hide();
+            reportBox.html('<table id="report-table"></table>'); // recreate table
+            var reportTable = $('#report-table');
+            var totalHrsWeek = 0;
+            for (var i = 0; i < 7; i++) { //for each day
+                var row = document.createElement('tr');
+                var header = buildDailyHeader(days[i]);
+                var cell = buildDailyCell(days[i]);
+                totalHrsWeek += days[i].total; // sum up the total hrs from each day
+                row.appendChild(header);
+                row.appendChild(cell);
+                reportTable.append(row);
+            }
+            // show total hrs for week
+            var totalText = document.createElement('p');
+            totalText.appendChild(document.createTextNode('Total hours this week: ' + totalHrsWeek));
+            reportBox.append(totalText);
+            reportBox.show();
+        }
+
+        function buildDailyHeader(day) {
+            var header = document.createElement('th');
+            //generate date sting for daily header
+            header.appendChild(document.createTextNode(week_enum[day.date.getDay()] + " " + month_enum[day.date.getMonth()] + " " + day.date.getDate()));
+            header.appendChild(document.createTextNode(" - " + day.total + "hrs")); // put into daily header
+            return header;
+        }
+
+        function buildDailyCell(day) {
+            var cell = document.createElement('td');
+            var dailyList = document.createElement('ul'); //init to empty list
+            if (day.events.length > 0) { // if there are events for the day
+                //check for overlapping events that would throw off the calculation
+                //the length check is so that we don't display more than one alert.
+                if (checkForOverlaps(day.events) === true) {
+                    insertOverlapAlertAfter($('#week-selector'));
+                }
+                dailyList = buildDailyEventList(day.events)
+            }
+            cell.appendChild(dailyList);
+            return cell;
+        }
+
+        function insertOverlapAlertAfter(element) {
+            if ($('#alert-box-overlap').length === 0) {
+                var alertBox = document.createElement('p');
+                alertBox.id = 'alert-box-overlap';
+                $(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar overlap. Hourly totals may not be accurate. Overlapping events are shown in <span class="overlap">red</span>. Click on a highlighted event to open it in Google Calendar.</span>');
+                element.after(alertBox);
+            }
+        }
+
+        function insertMultiDayIgnoreAlertAfter(element) {
+            if ($('#alert-box-multi-day-ignore').length === 0) {
+                var alertBox = document.createElement('p');
+                alertBox.id = 'alert-box-multi-day-ignore';
+                $(alertBox).html('<span class="li"><strong>Warning!</strong> Some events in this calendar were ignored because they span more than one day. Hourly totals may not be accurate. Please verify that all hours are accounted for.</span>');
+                element.after(alertBox);
+            }
+        }
+
+        function buildDailyEventList(events) {
+            var list = document.createElement('ul');
+            for (var j = 0; j < events.length; j++) { //for each event
+                var li = document.createElement('li');
+                if (events[j].overlap) {
+                    var a = document.createElement('a');
+                    a.href = events[j].url;
+                    a.target = "_blank";
+                    a.appendChild(document.createTextNode(events[j].name + " - " + events[j].length + "hrs")); //make a link to the event
+                    li.appendChild(a);
+                    li.className = "overlap"; //set the class so we can highlight them
+                } else {
+                    li.appendChild(document.createTextNode(events[j].name + " - " + events[j].length + "hrs"));
+                }
+                list.appendChild(li); //list it under that day
+            }
+            return list;
+        }
+
+        function modifyWeekOffset(offset) {
+            var selector = $('#week-selector-offset');
+            selector.val(parseInt(selector.val(), 10) + offset);
+            handleCalendarSelection();
+        }
+
+        function calculateDateRange(offset_weeks) {
+            //calculate date range based on a week offset from the current week
+            var weekBegin = new Date(); //initialize to now
+            weekBegin.setDate(weekBegin.getDate() + (7 * offset_weeks)); //calculate offset (usu. negative)
+            weekBegin.setHours(0, 0, 0, 0); // zero out time to midnight
+
+            if (weekBegin.getDay() >= 5) { //if it is friday or saturday today
+                weekBegin.setDate(weekBegin.getDate() - weekBegin.getDay()); // set weekBegin to sunday of this week
+            } else {
+                weekBegin.setDate(weekBegin.getDate() - weekBegin.getDay() - 7); // set weekBegin to sunday of last week
+            }
+            var weekEnd = new Date(weekBegin); // initialize weekEnd to the same day as week weekBegin
+            weekEnd.setDate(weekEnd.getDate() + 7); //go from midnight sunday (0) to midnight next sunday
+            weekEnd.setSeconds(-1); //then go back one ms to get the end of the week
+            return { "weekBegin": weekBegin, "weekEnd": weekEnd };
+        }
+
+        function checkForOverlaps(events) {
+            //function will iterate over events in a day to ensure no events overlap
+            //first sort the events by start time
+            var overlaps = false;
+            events.sort(function compare(a, b) {
+                return a.startTime.getTime() - b.startTime.getTime();
+            });
+            for (var j = 0; j < (events.length - 1); j++) { //for each event
+                if (events[j].endTime.getTime() > events[j + 1].startTime.getTime()) { // if the end time of one event is later than start time of next
+                    events[j].overlap = true;
+                    events[j + 1].overlap = true;
+                    overlaps = true;
+                }
+            }
+            return overlaps;
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <div id="padding-box1">
+            <h1>Timecard Assistant</h1>
+            <h2>by Billy Hudson</h2>
+        </div>
+        <div id="padding-box2">
+            <div id="welcome-box" style="display: none"></div>
+        </div>
+        <div class="clear"></div>
+    </header>
+    <content>
+        <div id="loading-box">
+            <h3>Loading...</h3>
+        </div>
+        <div id="authorize-box" style="display: none">
+            <!--Add a button for the user to click to initiate auth sequence -->
+            <p>In order to use <strong>Timecard Assistant</strong> you must first authorize the application to see your calendars.</p>
+            <button id="authorize-button">Authorize Now</button>
+        </div>
+        <div id="calendar-selector" style="display: none">
+            <p>
+                Please select the calendar which you would like analyzed:
+                <select id="calendar-selector-dropdown">
+                    <option value="" data-calendar-color-fg="#000000" data-calendar-color-bg="#B0B0B0">(Pick one)</option>
+                </select>
+            </p>
+        </div>
+        <div id="week-selector" style="display: none">
+            <p>
+                Select Week:
+                <button id="week-decrement" onClick="modifyWeekOffset(-1);">&lt;</button>
+                <input type="text" name="week-offset" id="week-selector-offset" value="0" disabled="1" size="1">
+                <button id="week-increment" onClick="modifyWeekOffset(1);">&gt;</button>
+                <button id="reload" onClick="handleCalendarSelection();">Reload Calendar</button>
+            </p>
+        </div>
+        <div id="report-box" style="display: none">
+        </div>
+    </content>
+    <!--This script must be loaded after everything else. -->
+    <script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
+</body>
 </html>
